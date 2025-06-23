@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-DOCTOR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-200 font-sans leading-relaxed">
+
+    <div class="container mx-auto p-6 lg:p-10">
+        <header class="flex flex-col items-center justify-center mb-16 text-center">
+            <i class="fas fa-stethoscope text-7xl text-purple-400 mb-4 animate-bounce"></i>
+            <h1 class="text-5xl font-extrabold text-purple-300 drop-shadow-lg tracking-wide">AI-DOCTOR</h1>
+            <p class="text-xl text-gray-400 mt-3 italic">Intelligent Medical Image Analysis Chatbot</p>
+        </header>
+        
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+            
+            <section class="bg-white/10 backdrop-blur-lg p-8 rounded-3xl shadow-2xl border border-white/20 transition-all duration-300 card-hover">
+                <h2 class="text-3xl font-bold text-purple-300 mb-6 flex items-center">
+                    <i class="fas fa-cloud-upload-alt mr-3 text-purple-400"></i> Upload Image
+                </h2>
+                
+                <button id="upload-btn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-50">
+                    <i class="fas fa-camera mr-3"></i> Click to Upload
+                </button>
+                
+                <input type="file" id="image-upload" accept="image/*" class="hidden" />
+                
+                <div id="image-container" class="hidden mt-6 border-2 border-dashed border-gray-600 rounded-lg p-2 overflow-hidden">
+                    <img id="display-image" src="" alt="Uploaded medical image for analysis" class="w-full h-auto rounded-md shadow-md object-cover" />
+                </div>
+            </section>
+
+            <section class="bg-white/10 backdrop-blur-lg p-8 rounded-3xl shadow-2xl border border-white/20 transition-all duration-300 card-hover">
+                <h2 class="text-3xl font-bold text-blue-300 mb-6 flex items-center">
+                    <i class="fas fa-question-circle mr-3 text-blue-400"></i> Ask a Question
+                </h2>
+                <textarea id="query-input" rows="5" placeholder="E.g., 'What abnormalities do you see in this X-ray?', 'Can you identify any fractures?', 'Describe the findings in this scan.'"
+                    class="w-full p-4 bg-gray-800 text-gray-200 rounded-lg shadow-inner border border-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 resize-y"></textarea>
+                <button id="submit-query" class="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-bold py-4 px-6 rounded-lg mt-6 shadow-lg transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+                    <i class="fas fa-paper-plane mr-3"></i> Submit Query
+                </button>
+            </section>
+        </main>
+        
+        <section class="grid grid-cols-1 gap-10">
+            <div id="response-section" class="hidden bg-white/10 backdrop-blur-lg p-8 rounded-3xl shadow-2xl border border-white/20 transition-all duration-300 fade-in">
+                <h2 class="text-3xl font-bold text-green-300 mb-6 flex items-center">
+                    <i class="fas fa-robot mr-3 text-green-400"></i> AI Responses
+                </h2>
+                
+                <div class="space-y-8">
+                    <div>
+                        <h3 class="text-xl font-semibold text-green-400 mb-3">🤖 meta-llama/llama-4-scout-17b-16e-instruct</h3>
+                        <div id="response-container-llama11b" class="bg-gray-800 p-6 rounded-lg text-gray-300 prose prose-invert max-w-none shadow-md">
+                            <p class="text-center text-gray-500 italic">Awaiting AI analysis...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="hidden">
+                        <h3 class="text-xl font-semibold text-green-400 mb-3">🧠 meta-llama/llama-4-maverick-17b-128e-instruct</h3>
+                        <div id="response-container-llama90b" class="bg-gray-800 p-6 rounded-lg text-gray-300 prose prose-invert max-w-none shadow-md">
+                            <p class="text-center text-gray-500 italic">Awaiting AI analysis...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-container" class="hidden mt-8 p-6 bg-red-700 text-white rounded-xl shadow-lg fade-in border border-red-500" role="alert">
+                <p id="error-text" class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3"></i> Something went wrong!
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadBtn = document.getElementById('upload-btn');
+            const imageUpload = document.getElementById('image-upload');
+            const displayImage = document.getElementById('display-image');
+            const imageContainer = document.getElementById('image-container');
+            const queryInput = document.getElementById('query-input');
+            const submitQuery = document.getElementById('submit-query');
+            const responseLlama = document.getElementById('response-container-llama11b');
+            const responseLlava = document.getElementById('response-container-llama90b');
+            const responseSection = document.getElementById('response-section'); // New element
+            const errorContainer = document.getElementById('error-container');
+            const errorText = document.getElementById('error-text');
+
+            // Click to Upload button trigger
+            uploadBtn.addEventListener('click', () => {
+                imageUpload.click();
+            });
+
+            // Display uploaded image
+            imageUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        displayImage.src = e.target.result;
+                        imageContainer.classList.remove('hidden');
+                        imageContainer.classList.add('fade-in'); // Add fade-in effect
+                    };
+                    reader.readAsDataURL(file);
+                    // Clear previous responses and errors when a new image is uploaded
+                    clearResponsesAndErrors();
+                }
+            });
+
+            // Submit Query
+            submitQuery.addEventListener('click', async () => {
+                const image = imageUpload.files[0];
+                const query = queryInput.value.trim(); // Trim whitespace
+
+                if (!image && !query) {
+                    showError('⚠️ Please upload an image and enter your question.');
+                    return;
+                } else if (!image) {
+                    showError('⚠️ Please upload an image before submitting a query.');
+                    return;
+                } else if (!query) {
+                    showError('⚠️ Please enter a question about the image.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('image', image);
+                formData.append('query', query);
+
+                // Show processing state
+                submitQuery.disabled = true;
+                submitQuery.innerHTML = '<i class="fas fa-hourglass-half mr-3 animate-spin"></i> Processing...';
+                responseLlama.innerHTML = '<p class="text-center text-gray-400 italic">Analyzing image with Llama model...</p>';
+                responseLlava.innerHTML = '<p class="text-center text-gray-400 italic">Analyzing image with Llava model...</p>';
+                responseSection.classList.remove('hidden'); // Show response section immediately
+                responseSection.classList.add('fade-in');
+                errorContainer.classList.add('hidden'); // Hide any previous errors
+
+                try {
+                    const response = await fetch('/upload_and_query', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.detail || 'An unexpected error occurred during analysis.');
+                    }
+
+                    // Display Llama response
+                    responseLlama.innerHTML = marked.parse(result.llama);
+                    
+                    // Display Llava response (if applicable)
+                    // Ensure llava exists in result, otherwise provide a default message
+                    responseLlava.innerHTML = result.llava ? marked.parse(result.llava) : '<p class="text-center text-gray-500 italic">Llava response not available or model not used.</p>';
+
+                    responseSection.classList.remove('hidden');
+                    responseSection.classList.add('fade-in'); // Ensure fade-in is applied
+                    errorContainer.classList.add('hidden'); // Hide error if successful
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError(error.message);
+                    responseLlama.innerHTML = '<p class="text-center text-red-400 italic">Error retrieving Llama response.</p>';
+                    responseLlava.innerHTML = '<p class="text-center text-red-400 italic">Error retrieving Llava response.</p>';
+                } finally {
+                    submitQuery.disabled = false;
+                    submitQuery.innerHTML = '<i class="fas fa-paper-plane mr-3"></i> Submit Query';
+                }
+            });
+
+            function showError(message) {
+                errorText.innerHTML = message; // Use innerHTML to allow for HTML in message
+                errorContainer.classList.remove('hidden');
+                errorContainer.classList.add('fade-in');
+                responseSection.classList.add('hidden'); // Hide response section on error
+            }
+
+            function clearResponsesAndErrors() {
+                responseLlama.innerHTML = '<p class="text-center text-gray-500 italic">Awaiting AI analysis...</p>';
+                responseLlava.innerHTML = '<p class="text-center text-gray-500 italic">Awaiting AI analysis...</p>';
+                responseSection.classList.add('hidden');
+                errorContainer.classList.add('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>
