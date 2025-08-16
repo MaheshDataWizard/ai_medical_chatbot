@@ -1,8 +1,3 @@
-Here’s a sample `README.md` file for your **AI Medical Chatbot** project:
-
----
-
-```markdown
 # AI Medical Chatbot 🤖💊
 
 An intelligent medical chatbot that provides instant support for basic health-related queries, symptom checking, and healthcare guidance using natural language processing (NLP) and medical datasets.
@@ -79,5 +74,6 @@ This chatbot is for informational purposes only and not a replacement for profes
 
 * Mahesh Khatik
 * Final Year Student, B.Tech in AI & Data Science
+
 
 
